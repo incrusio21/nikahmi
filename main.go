@@ -1,14 +1,11 @@
 package main
 
 import (
-	"embed"
 	"flag"
 
+	"github.com/incrusio21/nikahmi/app"
 	"github.com/incrusio21/nikahmi/db/mysql"
 )
-
-//go:embed app/*
-var Templatesfs embed.FS
 
 func main() {
 	migrate := flag.String("migrate", "", "Menjalankan Migrate dan bukan Server")
@@ -18,5 +15,13 @@ func main() {
 	if *migrate != "" {
 		mysql.Migrate(*migrate)
 		return
+	}
+
+	router := app.Router
+	Routing(router)
+
+	err := router.Listen(":3000")
+	if err != nil {
+		panic(err)
 	}
 }

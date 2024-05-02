@@ -6,18 +6,34 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html/v2"
+	"github.com/incrusio21/nikahmi/config"
 )
 
-//go:embed views/*
+//go:embed *
 var Templatesfs embed.FS
 
-var engine = html.NewFileSystem(http.FS(Templatesfs), ".html")
+var Router *fiber.App
 
-var App = fiber.New(fiber.Config{
-	Prefork:      true,
-	Views:        engine,
-	ErrorHandler: ErrorHandler,
-})
+func init() {
+	conf, err := config.Read()
+	if err != nil {
+		panic(err)
+	}
+
+	engine := html.NewFileSystem(http.FS(Templatesfs), ".html")
+	engine.AddFunc(
+		// add unescape function
+		"WEBSITE_NAME", func() string { return conf.App.Name },
+	)
+
+	Router = fiber.New(fiber.Config{
+		// Prefork:      true,
+		Views:        engine,
+		ErrorHandler: ErrorHandler,
+	})
+
+	Router.Static("/public", "./source")
+}
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
 	// ctx.Status(fiber.StatusInternalServerError)

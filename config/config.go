@@ -2,25 +2,23 @@ package config
 
 import (
 	"bytes"
+	"database/sql"
 	_ "embed"
 
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/storage/memory/v2"
+	"github.com/gofiber/storage/mysql/v2"
+	"github.com/incrusio21/nikahmi/db"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 //go:embed .yaml
 var defaultConfiguration []byte
-
-type Database struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Database string
-}
-
-type Config struct {
-	DB *Database
-}
+var store *session.Store
+var Database *gorm.DB
+var Yaml *Config
 
 var viper_config = viper.New()
 
@@ -33,6 +31,49 @@ func init() {
 		panic(err)
 	}
 
+	conf, err := Read()
+	if err != nil {
+		panic(err)
+	}
+
+	Yaml = conf
+
+	switch conf.DB.Driver {
+	default:
+		Database = db.GetMysqlDriver(conf.DB)
+	}
+
+	var storage fiber.Storage
+	switch conf.Session {
+	case "mysql":
+		var db_session *sql.DB
+		if conf.DB.Driver == "mysql" {
+			db_session = MysqlDB()
+		} else {
+			panic("Maaf Driver mysql tidak dapat di gunakan untuk Session")
+		}
+
+		storage = mysql.New(mysql.Config{
+			Db:    db_session,
+			Reset: false,
+			// GCInterval:      10 * time.Second,
+		})
+	default:
+		storage = memory.New()
+	}
+
+	store = session.New(session.Config{
+		Storage: storage,
+	})
+}
+
+func MysqlDB() *sql.DB {
+	sqlDB, err := Database.DB()
+	if err != nil {
+		panic(err)
+	}
+
+	return sqlDB
 }
 
 func Read() (*Config, error) {
