@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	_ "embed"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/gofiber/storage/memory/v2"
-	"github.com/gofiber/storage/mysql/v2"
+	"github.com/incrusio21/nikahmi/app/middleware/session"
+	"github.com/incrusio21/nikahmi/config/storage"
+	"github.com/incrusio21/nikahmi/config/storage/memory"
+	"github.com/incrusio21/nikahmi/config/storage/mysql"
 	"github.com/incrusio21/nikahmi/db"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -43,7 +43,7 @@ func init() {
 		Database = db.GetMysqlDriver(conf.DB)
 	}
 
-	var storage fiber.Storage
+	var storage storage.Storage
 	switch conf.Session {
 	case "mysql":
 		var db_session *sql.DB

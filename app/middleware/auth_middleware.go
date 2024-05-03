@@ -6,10 +6,11 @@ import (
 )
 
 func AuthMiddleware(ctx *fiber.Ctx) error {
-	sess := config.GetSession(ctx, "name")
+	sess := config.ReadSession(ctx)
+	name := sess.Get("name")
 
-	if sess == nil {
-		if err := config.Session(ctx).Destroy(); err != nil {
+	if name == nil {
+		if err := sess.Destroy(); err != nil {
 			panic(err)
 		}
 

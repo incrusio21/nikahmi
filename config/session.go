@@ -2,10 +2,10 @@ package config
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/incrusio21/nikahmi/app/middleware/session"
 )
 
-func Session(c *fiber.Ctx) *session.Session {
+func ReadSession(c *fiber.Ctx) *session.Session {
 	sess, err := store.Get(c)
 	if err != nil {
 		panic(err)
@@ -15,18 +15,21 @@ func Session(c *fiber.Ctx) *session.Session {
 }
 
 func GetSession(c *fiber.Ctx, session_name string) any {
-	return Session(c).Get(session_name)
+	return ReadSession(c).Get(session_name)
 }
 
-func SetSession(c *fiber.Ctx, session_name string, value any) *session.Session {
-	sess := Session(c)
-	sess.Set(session_name, value)
+func SetSession(c *fiber.Ctx, session []Session) *session.Session {
+	sess := ReadSession(c)
+
+	for _, val := range session {
+		sess.Set(val.Name, val.Value)
+	}
 
 	return sess
 }
 
 func DeleteSession(c *fiber.Ctx, session_name string) *session.Session {
-	sess := Session(c)
+	sess := ReadSession(c)
 	sess.Delete(session_name)
 
 	return sess
@@ -34,5 +37,5 @@ func DeleteSession(c *fiber.Ctx, session_name string) *session.Session {
 }
 
 func SaveSession(c *fiber.Ctx) {
-	Session(c).Save()
+	ReadSession(c).Save()
 }

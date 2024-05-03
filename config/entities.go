@@ -11,3 +11,8 @@ type Config struct {
 	DB      *db.DB
 	Session string
 }
+
+type Session struct {
+	Name  string
+	Value string
+}

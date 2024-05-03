@@ -2,6 +2,8 @@ package user
 
 import (
 	"database/sql"
+
+	"github.com/incrusio21/nikahmi/app/core/page/auth"
 )
 
 type User struct {
@@ -9,6 +11,7 @@ type User struct {
 	Email     string
 	FirstName string
 	Owner     sql.NullString
+	Auth      auth.Auth `gorm:"polymorphicType:Doctype;polymorphicId:Name;polymorphicValue:User"`
 }
 
 func (u *User) TableName() string {
