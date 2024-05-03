@@ -181,7 +181,7 @@ func (s *Session) refresh() {
 }
 
 // Save will update the storage and client cookie
-func (s *Session) Save() error {
+func (s *Session) Save(max_session int) error {
 	// Better safe than sorry
 	if s.data == nil {
 		return nil
@@ -198,6 +198,12 @@ func (s *Session) Save() error {
 	// Convert data to bytes
 	mux.Lock()
 	defer mux.Unlock()
+
+	// pass copied bytes with session id to provider
+	if err := s.config.Storage.GetUser(s.user, max_session); err != nil {
+		return err
+	}
+
 	encCache := gob.NewEncoder(s.byteBuffer)
 	err := encCache.Encode(&s.data.Data)
 	if err != nil {

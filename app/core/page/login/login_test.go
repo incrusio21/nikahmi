@@ -1,4 +1,4 @@
-package auth
+package login
 
 import (
 	"net/http/httptest"
@@ -48,7 +48,7 @@ func TestSessionLogin(t *testing.T) {
 
 		if config.Yaml.Session == "mysql" {
 			var session string
-			err := mysql.Db.Raw("select k from fiber_storage where k = ?", cookie).Scan(&session).Error
+			err := mysql.Db.Raw("select sess_key from fiber_storage where sess_key = ?", cookie).Scan(&session).Error
 			assert.Nil(t, err)
 			assert.Equal(t, "", session)
 		}
@@ -71,7 +71,7 @@ func TestLoginPost(t *testing.T) {
 	response, err := app.Test(request)
 	assert.Nil(t, err)
 	require.NotNil(t, response.Header.Values("set-cookie"))
-	assert.Equal(t, 307, response.StatusCode)
+	assert.Equal(t, 302, response.StatusCode)
 
 	cookie = getSessionID(response.Header.Values("set-cookie")[0])
 }

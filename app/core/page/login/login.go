@@ -1,7 +1,10 @@
-package auth
+package login
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/incrusio21/nikahmi/app/core/model"
 	"github.com/incrusio21/nikahmi/app/utils"
 	"github.com/incrusio21/nikahmi/config"
 	"github.com/incrusio21/nikahmi/db/mysql"
@@ -21,26 +24,26 @@ func Login(ctx *fiber.Ctx) error {
 			return err
 		}
 
-		user := Auth{Name: request.Username, Fieldname: "password", Doctype: "User"}
-
-		err = mysql.Db.First(&user).Error
-		if err == nil && utils.CheckPassword(user.Password, request.Password) {
-			// ctx.Query("name", "unknown user")
-
+		auth := model.Auth{Name: request.Username, Fieldname: "password", Doctype: "User"}
+		err = mysql.Db.First(&auth).Error
+		if err == nil && utils.CheckPassword(auth.Password, request.Password) {
 			sess := config.SetSession(ctx, []config.Session{{Name: "name", Value: request.Username}})
+
 			sess.SetUser(request.Username)
-			if err := sess.Save(); err != nil {
-				panic(err)
+			if err := sess.Save(auth.SimultaneousSessions); err == nil {
+				ctx.Method(fiber.MethodGet)
+				return ctx.Redirect("/")
 			}
 
-			ctx.Method(fiber.MethodGet)
-			return ctx.Redirect("/")
+			login_err = fmt.Sprint(err)
 		}
 
-		login_err = "User atau Password yang digunakan salah"
+		if login_err == "" {
+			login_err = "User atau Password yang digunakan salah"
+		}
 	}
 
-	return ctx.Render("core/page/auth/login", fiber.Map{
+	return ctx.Render("core/page/login/login", fiber.Map{
 		"Title": "Login",
 		"Error": login_err,
 	}, "views/login/master")

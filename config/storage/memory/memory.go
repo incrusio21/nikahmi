@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -54,7 +55,30 @@ func (s *Storage) Get(key string) ([]byte, string, error) {
 		return nil, "", nil
 	}
 
-	return v.data, "", nil
+	return v.data, v.user, nil
+}
+
+// Get value by key
+func (s *Storage) GetUser(user string, max_session int) error {
+	if len(user) <= 0 || max_session == 0 {
+		return nil
+	}
+
+	total_session := 0
+	s.mux.RLock()
+	for _, entry := range s.db {
+		if entry.user == user {
+			total_session++
+		}
+	}
+	s.mux.RUnlock()
+
+	// If the expiration time has already passed, then return nil
+	if max_session <= total_session {
+		return errors.New("user is unable to log in because they have exceeded the maximum number of devices")
+	}
+
+	return nil
 }
 
 // Set key with value

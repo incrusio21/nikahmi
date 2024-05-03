@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,11 +16,12 @@ type Storage struct {
 	gcInterval time.Duration
 	done       chan struct{}
 
-	sqlSelect string
-	sqlInsert string
-	sqlDelete string
-	sqlReset  string
-	sqlGC     string
+	sqlSelect     string
+	sqlSelectUser string
+	sqlInsert     string
+	sqlDelete     string
+	sqlReset      string
+	sqlGC         string
 }
 
 var (
@@ -28,11 +30,11 @@ var (
 	dropQuery = "DROP TABLE IF EXISTS %s;"
 	initQuery = []string{
 		`CREATE TABLE IF NOT EXISTS %s ( 
-			key  VARCHAR(64) NOT NULL DEFAULT '', 
+			sess_key  VARCHAR(64) NOT NULL DEFAULT '', 
 			value  BLOB NOT NULL, 
 			exp  BIGINT NOT NULL DEFAULT '0', 
 			name  VARCHAR(140) NOT NULL DEFAULT '', 
-			PRIMARY KEY (key)
+			PRIMARY KEY (sess_key)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8;`,
 	}
 	checkSchemaQuery = `SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
@@ -88,14 +90,15 @@ func New(config ...Config) *Storage {
 
 	// Create storage
 	store := &Storage{
-		gcInterval: cfg.GCInterval,
-		db:         db,
-		done:       make(chan struct{}),
-		sqlSelect:  fmt.Sprintf("SELECT value, exp, name FROM %s WHERE key=?;", cfg.Table),
-		sqlInsert:  fmt.Sprintf("INSERT INTO %s (key, value, exp, name) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE value = ?, exp = ?", cfg.Table),
-		sqlDelete:  fmt.Sprintf("DELETE FROM %s WHERE key=?", cfg.Table),
-		sqlReset:   fmt.Sprintf("TRUNCATE TABLE %s;", cfg.Table),
-		sqlGC:      fmt.Sprintf("DELETE FROM %s WHERE exp <= ? AND e != 0", cfg.Table),
+		gcInterval:    cfg.GCInterval,
+		db:            db,
+		done:          make(chan struct{}),
+		sqlSelect:     fmt.Sprintf("SELECT value, exp, name FROM %s WHERE sess_key=?;", cfg.Table),
+		sqlSelectUser: fmt.Sprintf("SELECT count(*) FROM %s WHERE name=?;", cfg.Table),
+		sqlInsert:     fmt.Sprintf("INSERT INTO %s (sess_key, value, exp, name) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE value = ?, exp = ?", cfg.Table),
+		sqlDelete:     fmt.Sprintf("DELETE FROM %s WHERE sess_key=?", cfg.Table),
+		sqlReset:      fmt.Sprintf("TRUNCATE TABLE %s;", cfg.Table),
+		sqlGC:         fmt.Sprintf("DELETE FROM %s WHERE exp <= ? AND e != 0", cfg.Table),
 	}
 
 	store.checkSchema(cfg.Table)
@@ -134,6 +137,34 @@ func (s *Storage) Get(key string) ([]byte, string, error) {
 	}
 
 	return data, "", nil
+}
+
+// Get value by key
+func (s *Storage) GetUser(user string, max_session int) error {
+	if len(user) <= 0 || max_session == 0 {
+		return nil
+	}
+	row := s.db.QueryRow(s.sqlSelectUser, user)
+
+	// Add db response to data
+
+	var (
+		total_session int
+	)
+
+	if err := row.Scan(&total_session); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+
+	// If the expiration time has already passed, then return nil
+	if max_session <= total_session {
+		return errors.New("user is unable to log in because they have exceeded the maximum number of devices")
+	}
+
+	return nil
 }
 
 // Set key with value

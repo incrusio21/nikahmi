@@ -36,6 +36,6 @@ func DeleteSession(c *fiber.Ctx, session_name string) *session.Session {
 
 }
 
-func SaveSession(c *fiber.Ctx) {
-	ReadSession(c).Save()
-}
+// func SaveSession(c *fiber.Ctx) {
+// 	ReadSession(c).Save()
+// }

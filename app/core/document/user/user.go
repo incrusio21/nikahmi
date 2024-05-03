@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/incrusio21/nikahmi/app/core/page/auth"
+	"github.com/incrusio21/nikahmi/app/core/model"
 	"github.com/incrusio21/nikahmi/app/utils"
 	"github.com/incrusio21/nikahmi/db/mysql"
 )
@@ -15,9 +15,9 @@ func Create(ctx *fiber.Ctx) error {
 		panic(err)
 	}
 
-	user := &User{
+	user := &model.User{
 		Name: "Administrator",
-		Auth: auth.Auth{Password: pass, Fieldname: "password"},
+		Auth: model.Auth{Password: pass, Fieldname: "password"},
 	}
 
 	response := mysql.Db.Create(user)

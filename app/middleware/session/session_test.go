@@ -66,7 +66,7 @@ func Test_Session(t *testing.T) {
 	utils.AssertEqual(t, "123", id)
 
 	// save the old session first
-	err = sess.Save()
+	err = sess.Save(0)
 	utils.AssertEqual(t, nil, err)
 
 	// requesting entirely new context to prevent falsy tests
@@ -173,7 +173,7 @@ func Test_Session_Types(t *testing.T) {
 	sess.Set("vcomplex128", vcomplex128)
 
 	// save session
-	err = sess.Save()
+	err = sess.Save(0)
 	utils.AssertEqual(t, nil, err)
 
 	// get session
@@ -223,7 +223,7 @@ func Test_Session_Store_Reset(t *testing.T) {
 	// set value & save
 	sess.Set("hello", "world")
 	ctx.Request().Header.SetCookie(store.sessionName, sess.ID())
-	utils.AssertEqual(t, nil, sess.Save())
+	utils.AssertEqual(t, nil, sess.Save(0))
 
 	// reset store
 	utils.AssertEqual(t, nil, store.Reset())
@@ -254,7 +254,7 @@ func Test_Session_Save(t *testing.T) {
 		sess.Set("name", "john")
 
 		// save session
-		err = sess.Save()
+		err = sess.Save(0)
 		utils.AssertEqual(t, nil, err)
 	})
 
@@ -275,7 +275,7 @@ func Test_Session_Save(t *testing.T) {
 		sess.Set("name", "john")
 
 		// save session
-		err = sess.Save()
+		err = sess.Save(0)
 		utils.AssertEqual(t, nil, err)
 		utils.AssertEqual(t, store.getSessionID(ctx), string(ctx.Response().Header.Peek(store.sessionName)))
 		utils.AssertEqual(t, store.getSessionID(ctx), string(ctx.Request().Header.Peek(store.sessionName)))
@@ -305,7 +305,7 @@ func Test_Session_Save_Expiration(t *testing.T) {
 		sess.SetExpiry(sessionDuration)
 
 		// save session
-		err = sess.Save()
+		err = sess.Save(0)
 		utils.AssertEqual(t, nil, err)
 
 		// here you need to get the old session yet
@@ -363,7 +363,7 @@ func Test_Session_Destroy(t *testing.T) {
 
 		// set value & save
 		sess.Set("name", "fenny")
-		utils.AssertEqual(t, nil, sess.Save())
+		utils.AssertEqual(t, nil, sess.Save(0))
 		sess, err = store.Get(ctx)
 		utils.AssertEqual(t, nil, err)
 
@@ -400,7 +400,7 @@ func Test_Session_Cookie(t *testing.T) {
 	// get session
 	sess, err := store.Get(ctx)
 	utils.AssertEqual(t, nil, err)
-	utils.AssertEqual(t, nil, sess.Save())
+	utils.AssertEqual(t, nil, sess.Save(0))
 
 	// cookie should be set on Save ( even if empty data )
 	utils.AssertEqual(t, 84, len(ctx.Response().Header.PeekCookie(store.sessionName)))
@@ -421,7 +421,7 @@ func Test_Session_Cookie_In_Response(t *testing.T) {
 	utils.AssertEqual(t, nil, err)
 	sess.Set("id", "1")
 	utils.AssertEqual(t, true, sess.Fresh())
-	utils.AssertEqual(t, nil, sess.Save())
+	utils.AssertEqual(t, nil, sess.Save(0))
 
 	sess, err = store.Get(ctx)
 	utils.AssertEqual(t, nil, err)
@@ -447,12 +447,12 @@ func Test_Session_Deletes_Single_Key(t *testing.T) {
 	ctx.Request().Header.SetCookie(store.sessionName, sess.ID())
 
 	sess.Set("id", "1")
-	utils.AssertEqual(t, nil, sess.Save())
+	utils.AssertEqual(t, nil, sess.Save(0))
 
 	sess, err = store.Get(ctx)
 	utils.AssertEqual(t, nil, err)
 	sess.Delete("id")
-	utils.AssertEqual(t, nil, sess.Save())
+	utils.AssertEqual(t, nil, sess.Save(0))
 
 	sess, err = store.Get(ctx)
 	utils.AssertEqual(t, nil, err)
@@ -487,7 +487,7 @@ func Test_Session_Reset(t *testing.T) {
 		freshSession.Set("name", "fenny")
 		freshSession.Set("email", "fenny@example.com")
 
-		err = freshSession.Save()
+		err = freshSession.Save(0)
 		utils.AssertEqual(t, nil, err)
 
 		// set cookie
@@ -517,7 +517,7 @@ func Test_Session_Reset(t *testing.T) {
 		utils.AssertEqual(t, nil, acquiredSession.Get("email"))
 
 		// Save after resetting
-		err = acquiredSession.Save()
+		err = acquiredSession.Save(0)
 		utils.AssertEqual(t, nil, err)
 
 		// Check that the session id is not in the header or cookie anymore
@@ -547,7 +547,7 @@ func Test_Session_Regenerate(t *testing.T) {
 
 		originalSessionUUIDString = freshSession.ID()
 
-		err = freshSession.Save()
+		err = freshSession.Save(0)
 		utils.AssertEqual(t, nil, err)
 
 		// set cookie
@@ -582,7 +582,7 @@ func Benchmark_Session(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			sess, _ := store.Get(c) //nolint:errcheck // We're inside a benchmark
 			sess.Set("john", "doe")
-			err = sess.Save()
+			err = sess.Save(0)
 		}
 
 		utils.AssertEqual(b, nil, err)
@@ -597,7 +597,7 @@ func Benchmark_Session(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			sess, _ := store.Get(c) //nolint:errcheck // We're inside a benchmark
 			sess.Set("john", "doe")
-			err = sess.Save()
+			err = sess.Save(0)
 		}
 
 		utils.AssertEqual(b, nil, err)
